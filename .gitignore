@@ -1,0 +1,14 @@
+# Test data for local storage
+test-data
+
+# Dependency directories
+node_modules
+
+# WebStorm configs file
+.idea
+
+# OSX metadata file
+.DS_Store
+
+# Configuration files
+config/*.json
