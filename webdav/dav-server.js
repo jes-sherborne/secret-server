@@ -129,29 +129,36 @@ function create(options, middleware) {
         res.setHeader("ETag", target.etag + "_gz");
         res.setHeader("Content-Encoding", "gzip");
         zlib.gzip(value, function(err, compressed) {
+          value.fill(0);
+  
           if (err) {
             res.sendStatus(500); // Server error
             return;
           }
           res.setHeader("Content-Length", compressed.length);
           res.send(compressed);
+          compressed.fill(0);
         })
       } else if (req.acceptsEncoding("deflate")) {
         res.setHeader("ETag", target.etag + "_df");
         res.setHeader("Content-Encoding", "deflate");
         zlib.deflate(value, function(err, compressed) {
+          value.fill(0);
+
           if (err) {
             res.sendStatus(500); // Server error
             return;
           }
           res.setHeader("Content-Length", compressed.length);
           res.send(compressed);
+          compressed.fill(0);
         })
       } else {
         res.setHeader("ETag", target.etag );
         res.setHeader("Content-Encoding", "identity");
         res.setHeader("Content-Length", target.contentLength);
         res.send(value);
+        value.fill(0);
       }
     });
   }
