@@ -62,6 +62,8 @@ function decrypt(keyService, envelope, aad, callback) {
   
     authenticatedEncryption.decrypt(parsedEnvelope.encryptedBlob, decryptedKey, aadBuffer, function(err, decryptedData, aad) {
       var parsedAad;
+  
+      decryptedKey.fill(0);
       
       if (err) {
         callback(err);
