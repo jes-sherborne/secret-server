@@ -1,3 +1,9 @@
+# DISCLAIMER
+
+This is still very much _work-in-progress_. It is both under-tested and largely undocumented. Neither are desirable attributes in a secure system.
+
+I don't yet use this for secrets I care about, and you shouldn't either. 
+
 # Secret-Server
 
 Even a small software development group has dozens of digital secrets. These typically include things like:
