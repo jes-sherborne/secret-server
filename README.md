@@ -22,17 +22,39 @@ Secret Server runs as a standalone service, and it has special features that mak
 
 ## Goals and limitations
 
-In any security system, there are inherent trade-offs between security and convenience. Secret Server attempts to make everyday development systems more secure by making it convenient to do the right thing. Lots of teams distribute secrets by hand and hope for the best. They know this is bad, but there isn't an obvious alternative.
+In any security system, there are inherent trade-offs between security and convenience. 
 
-On the other hand there are also sophisticated security tools and frameworks. While they are very powerful, they are also complex and and require considerable expertise to use effectively.
+Secret Server attempts to make everyday development systems more secure by making it convenient to do the right thing. Lots of teams distribute secrets by hand and hope for the best. They know this is bad, but there isn't an obvious alternative.
+
+By the same token, complex systems are inherently harder to secure. The more moving parts you have to deal with, the more likely it is that the system will be vulnerable because of a configuration mistake.
+
+Secret Server attempts to address this by being as simple as possible. It does one thing—distribute secrets—using well-established techniques in a straightforward way.
 
 ## Getting started
 
-### Generate your server certificate
+### Understanding certificates
 
 Secret Server uses X-509 certificates to authenticate clients and servers. This section assumes that you don't have this set up yet. If you already have a certificate authority that can issue both client and server certificates, you can skip this section.
 
-This [in-depth tutorial](https://jamielinux.com/docs/openssl-certificate-authority/index.html) provides a sensible approach to setting up your CA using plain OpenSSL commands.
+If you run a web server, you may have gotten a certificate for it. In this case you probably paid a third party (like Symantec or DigiCert, or whoever) to sign your certificate. With their signature, you can serve pages over https, and the user's browser will display a reassuring green padlock icon to show everyone that your site is legitimate.
+
+We will take a different approach for Secret Server.
+
+In a typical web browsing scenario, a server presents a certificate, but the clients don't have to do anything special. They just type in the URL, and everything just works.
+
+In our system, both the client and server will present certificates, and both parties will check that the certificates are compatible. This provides a strong two-way agreement. The process will only work if both parties have appropriate certificates, which provides a much stronger guarantee in the integrity of the system.
+
+While this provides excellent security, it means we have a bit of work to do up-front.
+
+### Creating your Certificate Authority
+
+Instead of using a third party, we will be signing the certificates ourselves. We do this by creating what is called a Certificate Authority, which is basically just a private key and a few rules.
+
+The standard way to do this is with OpenSSL. The ugly truth is that setting up a certificate authority, then generating and signing certificates with OpenSSL is an arcane process. There are lots of configuration options, many with little practical consequence to most users. If it makes you feel better, it seems that everyone feels this way, and various projects (like CloudFlare's CFSSL and Square's CertStrap) attempt to streamline the process.
+
+Having said that, I still recommend that you use OpenSSL. First, it's very widely used. You can readily find examples for just about anything you'd want to do with it. Second, because of its critical role in internet security infrastructure, it gets intense scrutiny. And lastly, it's very heavily documented.
+
+To make things easier, you can use cert-tools/cert-helper.sh 
 
 ## Key concepts
 
