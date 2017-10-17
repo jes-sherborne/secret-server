@@ -14,7 +14,7 @@ Even a small software development group has dozens of digital secrets. Usually t
 
 Without some kind of system, these keys can be difficult to distribute and track.
 
-Secret Server makes it much more straightforward to manage your secrets. It stores all your keys in an encrypted repository, and lets you choose who can access each key.
+Secret Server makes it straightforward to manage your secrets. It stores all your keys in an encrypted repository, and lets you choose who can access each key.
 
 Each user gets their own view with just the secrets they have access to. It works just like a remote disk, so no special tools are needed to access them. Unlike a regular filesystem, the secrets are only stored in memory. Secrets are decrypted for the each user only when needed.
 
@@ -24,37 +24,44 @@ Secret Server runs as a standalone service, and it has special features that mak
 
 In any security system, there are inherent trade-offs between security and convenience. 
 
-Secret Server attempts to make everyday development systems more secure by making it convenient to do the right thing. Lots of teams distribute secrets by hand and hope for the best. They know this is bad, but there isn't an obvious alternative.
+Secret Server strives to make everyday development systems more secure by making good security practices more convenient. Lots of teams distribute secrets by hand and hope for the best. They know this is bad, but there hasn't an easy-to-use alternative.
 
-By the same token, complex systems are inherently harder to secure. The more moving parts you have to deal with, the more likely it is that the system will be vulnerable because of a configuration mistake.
+By the same token, complex systems are inherently harder to secure. It can be easy to make a seemingly-innocuous configuration change that ruins the overall security of the system, even if the underlying implemetation is done well.
 
 Secret Server attempts to address this by being as simple as possible. It does one thing—distribute secrets—using well-established techniques in a straightforward way.
 
+There are other systems that solve this problem, including Vault from Hashicorp and Key Whiz from Square. I think they're both great. But I also think that they can be very complex. If you need the additional capabilities that these systems provide, by all means use one.
+
+But if you've looked at these and thought, "There has to be a simpler way!", then Secret Server may be for you.
+
 ## Getting started
 
-### Understanding certificates
+Secret Server uses X-509 certificates to authenticate clients and servers. This section assumes that you don't have this set up yet. If you already have a certificate authority that can issue both client and server certificates, you can skip ahead.
 
-Secret Server uses X-509 certificates to authenticate clients and servers. This section assumes that you don't have this set up yet. If you already have a certificate authority that can issue both client and server certificates, you can skip this section.
+Otherwise, create a directory to hold your certificates and type:
 
-If you run a web server, you may have gotten a certificate for it. In this case you probably paid a third party (like Symantec or DigiCert, or whoever) to sign your certificate. With their signature, you can serve pages over https, and the user's browser will display a reassuring green padlock icon to show everyone that your site is legitimate.
+```
+./cert-herlper.sh /path/to/cert/directory
+```
 
-We will take a different approach for Secret Server.
+You can use cert-helper to create files for local testing or production use.
 
-In a typical web browsing scenario, a server presents a certificate, but the clients don't have to do anything special. They just type in the URL, and everything just works.
+__Tips__
 
-In our system, both the client and server will present certificates, and both parties will check that the certificates are compatible. This provides a strong two-way agreement. The process will only work if both parties have appropriate certificates, which provides a much stronger guarantee in the integrity of the system.
+* Be sure to save the generated passwords in a secure place like a password manager. You will need them to create new certificates and to install your client certificate.
+* You should save these files in a secure location. A good compromise between convenience and security is to create an encrypted volume using something like Veracrypt. You should only mount this volume when you need to create new certificates.
 
-While this provides excellent security, it means we have a bit of work to do up-front.
+__Extra steps for production systems__
 
-### Creating your Certificate Authority
+If you are using these certificates in a production system, you should take additional steps.
 
-Instead of using a third party, we will be signing the certificates ourselves. We do this by creating what is called a Certificate Authority, which is basically just a private key and a few rules.
+1. Make a copy of `root-ca/certs/root-ca.cert.pem`. You will be installing this certificate widely
+2. Move the entire `root-ca` directory to its own encrypted storage. Ideally, you should keep this offline. You will only need to use it if you need to create another signing CA, so it will not inconvenience you to keep it offline.
+3. Install `root-ca.cert.pem` as a trusted certificate using the tools in your operating system
 
-The standard way to do this is with OpenSSL. The ugly truth is that setting up a certificate authority, then generating and signing certificates with OpenSSL is an arcane process. There are lots of configuration options, many with little practical consequence to most users. If it makes you feel better, it seems that everyone feels this way, and various projects (like CloudFlare's CFSSL and Square's CertStrap) attempt to streamline the process.
+__Install your personal client certificate__
 
-Having said that, I still recommend that you use OpenSSL. First, it's very widely used. You can readily find examples for just about anything you'd want to do with it. Second, because of its critical role in internet security infrastructure, it gets intense scrutiny. And lastly, it's very heavily documented.
-
-To make things easier, you can use cert-tools/cert-helper.sh 
+To connect to Secret Server, you will need to install the client certificate on your system. On Mac and Windows, just double-click the pfx file and supply your password.
 
 ## Key concepts
 
