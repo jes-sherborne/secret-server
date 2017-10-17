@@ -38,18 +38,33 @@ get_sans(){
   fi
 }
 
+get_localhost_sans () {
+  lower_host="$(hostname)"
+  lower_host=$(echo "$(hostname)" | tr '[:upper:]' '[:lower:]')
+  san_dns_n=2
+  san_ip_n=2
+  san_dns=("$lower_host" "localhost")
+  san_ip=("127.0.0.1")
+}
+
 get_new_signing_ca_info () {
+
   signing_ca_name=
   signing_ca_dir=
+  if [ ! -z "$1" ]; then
+    signing_ca_name="$1"
+  fi
+
   while [ -z "$signing_ca_name" ]; do
-    read -p "Name your signing CA. If you don't plan to have more than one at a time, just call it '1', '2', etc: " signing_ca_name
-    signing_ca_dir="signing-ca-$signing_ca_name"
-    if [ -d "$signing_ca_dir" ]; then
-      echo "You already have a signing CA with this name."
-      signing_ca_name=
-      signing_ca_dir=
-    fi
+    read -p "What do you want to call your signing CA? Unless you need to run multiple signing CAs at a time (you probably don't), just call it '1', '2', etc: " signing_ca_name
   done
+  signing_ca_dir="signing-ca-$signing_ca_name"
+  if [ -d "$signing_ca_dir" ]; then
+    echo "You already have a signing CA with this name."
+    signing_ca_name=
+    signing_ca_dir=
+    get_new_signing_ca_info
+  fi
 }
 
 get_existing_signing_ca_dir () {
@@ -59,7 +74,7 @@ get_existing_signing_ca_dir () {
       signing_ca_dirs=("${signing_ca_dirs[@]}" "$file")
     done < <(find . -type d -maxdepth 1 -name 'signing-ca-*' -print0 | sort -z)
 
-    if [ ${#signing_ca_dirs[@]} -eq -1 ]; then
+    if [ ${#signing_ca_dirs[@]} -eq 1 ]; then
       signing_ca_dir=${signing_ca_dirs[0]}
       signing_ca_dir=${signing_ca_dir##*/}
     elif [ ${#signing_ca_dirs[@]} -gt 0 ]; then
@@ -92,8 +107,12 @@ get_root_ca_password () {
 
 get_server_name (){
   server_name=
+  if [ ! -z "$1" ]; then
+    server_name=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+  fi
+
   while [ -z "$server_name" ]; do
-  read -p "Enter the name of the server (e.g., 'secret.example.com'): " server_name
+  read -p "What is the most common DNS name of the server (e.g., 'secret.example.com')? " server_name
   done
   server_file_name="$server_name"
   if [ -e "$signing_ca_dir/certs/$server_file_name.cert.pem" ]; then
@@ -110,13 +129,18 @@ get_server_name (){
 }
 
 get_client_name (){
+  client_prompt="the user's"
+  if [ ! -z "$1" ]; then
+    client_prompt="$1"
+  fi
+
   client_email=""
   client_name=""
   while [ -z "$client_email" ]; do
-    read -p "Enter the user's email address (e.g., 'user@example.com'): " client_email
+    read -p "What is $client_prompt email address (e.g., 'user@example.com')? " client_email
   done
   while [ -z "$client_name" ]; do
-    read -p "Enter the user's full name (e.g., 'John Smith'): " client_name
+    read -p "What is $client_prompt full name (e.g., 'John Smith')? " client_name
   done
   client_file_name="$client_email"
   if [ -e "$signing_ca_dir/certs/$client_file_name.cert.pem" ]; then
@@ -153,13 +177,11 @@ init_ca_directory (){
 create_root_ca () {
   init_ca_directory "$root_ca_dir"
 
-  pushd "$root_ca_dir"
-  root_ca_dir_abs="$(pwd)"
-  popd
+  root_ca_dir_rel="./$root_ca_dir"
 
   temp_conf=$(<"$script_dir/root-ca.conf")
   temp_conf="${temp_conf//____orgName____/$org_name}"
-  temp_conf="${temp_conf//____dir____/$root_ca_dir_abs}"
+  temp_conf="${temp_conf//____dir____/$root_ca_dir_rel}"
   echo "$temp_conf" > "$root_ca_dir/root-ca.conf"
 
   root_ca_password="$(openssl rand -base64 33)"
@@ -187,13 +209,11 @@ create_root_ca () {
 create_signing_ca () {
   init_ca_directory "$signing_ca_dir"
 
-  pushd "$signing_ca_dir"
-  signing_ca_dir_abs="$(pwd)"
-  popd
+  signing_ca_dir_rel="./$signing_ca_dir"
 
   temp_conf=$(<"$script_dir/signing-ca.conf")
   temp_conf="${temp_conf//____orgName____/$org_name}"
-  temp_conf="${temp_conf//____dir____/$signing_ca_dir_abs}"
+  temp_conf="${temp_conf//____dir____/$signing_ca_dir_rel}"
   temp_conf="${temp_conf//____caName____/$signing_ca_name}"
   echo "$temp_conf" > "$signing_ca_dir/ca.conf"
 
@@ -314,18 +334,34 @@ create_client_cert () {
 
 }
 
-action_create_new () {
+action_top_menu_new () {
   printf "It looks like you haven't run cert-helper in this directory before, so it will set up everything for you.\n\n"
-  read -p "Press <return> to continue or type 'quit' " top_action
-  if [ "$top_action" = "quit" ]; then
-    exit 0
-  fi
-
-  get_org_name
-  get_new_signing_ca_info
-  get_server_name
-  get_sans
-  get_client_name
+  top_actions=("Create files for local testing" "Create files for a production system" "Quit")
+  PS3="What would you like to do (1-${#top_actions[@]})? "
+  select top_action in "${top_actions[@]}"
+  do
+    case "$top_action" in
+    "Create files for local testing")
+      get_org_name
+      get_new_signing_ca_info "1"
+      get_server_name $(hostname)
+      get_localhost_sans
+      get_client_name "your"
+      break
+      ;;
+    "Create files for a production system")
+      get_org_name
+      get_new_signing_ca_info
+      get_server_name
+      get_sans
+      get_client_name "your"
+      break
+      ;;
+    "Quit")
+      exit 0
+      ;;
+    esac
+  done
 
   create_root_ca
   create_signing_ca
@@ -338,16 +374,28 @@ action_create_new () {
   printf "******************************************************************************\n"
   printf "OUTPUT SUMMARY\n\n"
 
-  printf "1.  Root CA password (keep secret): $root_ca_password\n"
-  printf "2.  Signing CA password (keep secret): $signing_ca_password\n"
-  printf "3.  Root CA certificate: $root_ca_dir/certs/root-ca.cert.pem\n"
-  printf "4.  Signing CA certificate chain: $signing_ca_dir/certs/ca-chain.cert.pem\n"
-  printf "5.  Server certificate for $server_name: $signing_ca_dir/certs/$server_file_name.cert.pem\n"
-  printf "6.  Server key for $server_name: $signing_ca_dir/private/$server_file_name.key.pem\n"
-  printf "7.  Client certificate for $client_email: $signing_ca_dir/certs/$client_file_name.cert.pem\n"
-  printf "8.  Client key for $client_email: $signing_ca_dir/private/$client_file_name.key.pem\n"
-  printf "9.  Client key PKCS12 bundle: $signing_ca_dir/private/$client_file_name.pfx\n"
-  printf "10. Password for PKCS12 bundle: $client_pfx_password\n"
+  printf "Top-level directory for certificate files is $top_level_dir\n\n"
+
+  printf "Store these passwords in a secure location, like a password manager:\n\n"
+  printf "1.  Root CA password (used to create new signing CAs): $root_ca_password\n"
+  printf "2.  Signing CA password (used to create new client and server certificates): $signing_ca_password\n"
+  printf "3.  PKCS12 bundle password (used to install your user certificate): $client_pfx_password\n"
+
+  printf "\nHere is your root certificate. Install this on any computers that you want to automatically trust the certificates you create:\n\n"
+  printf "1.  Root certificate $root_ca_dir/certs/root-ca.cert.pem\n"
+
+  printf "\nHere are your server certificate files. You will need all of them to run a secure server. Note that the key file is secret, so protect it carefully:\n\n"
+
+  printf "1.  Signing CA certificate chain: $signing_ca_dir/certs/ca-chain.cert.pem\n"
+  printf "2.  Server certificate for $server_name: $signing_ca_dir/certs/$server_file_name.cert.pem\n"
+  printf "3.  Server secret key for $server_name: $signing_ca_dir/private/$server_file_name.key.pem\n"
+
+
+  printf "\nHere are your personal certificate files. You will need to install them on your system to connect to systems that require client certificates (like Secret Server). On Mac and Windows, you will just need the pfx file and its password (see above):\n\n"
+
+  printf "1.  Client certificate for $client_email: $signing_ca_dir/certs/$client_file_name.cert.pem\n"
+  printf "2.  Client secret key for $client_email: $signing_ca_dir/private/$client_file_name.key.pem\n"
+  printf "3.  Client key PKCS12 bundle: $signing_ca_dir/private/$client_file_name.pfx\n"
   printf "\n******************************************************************************\n"
 }
 
@@ -368,9 +416,9 @@ action_top_menu () {
       printf "******************************************************************************\n"
       printf "OUTPUT SUMMARY\n\n"
 
-      printf "1.  Client certificate for $client_email: $signing_ca_dir/certs/$client_file_name.cert.pem\n"
-      printf "2.  Client key for $client_email: $signing_ca_dir/private/$client_file_name.key.pem\n"
-      printf "3.  Client key PKCS12 bundle: $signing_ca_dir/private/$client_file_name.pfx\n"
+      printf "1.  Client certificate for $client_email: $top_level_dir/$signing_ca_dir/certs/$client_file_name.cert.pem\n"
+      printf "2.  Client key for $client_email: $top_level_dir/$signing_ca_dir/private/$client_file_name.key.pem\n"
+      printf "3.  Client key PKCS12 bundle: $top_level_dir/$signing_ca_dir/private/$client_file_name.pfx\n"
       printf "4.  Password for PKCS12 bundle: $client_pfx_password\n"
       printf "\n******************************************************************************\n"
       break
@@ -386,9 +434,11 @@ action_top_menu () {
       printf "\n\n"
       printf "******************************************************************************\n"
       printf "OUTPUT SUMMARY\n\n"
+      printf "Store this information for future reference\n\n"
 
-      printf "1.  Server certificate for $server_name: $signing_ca_dir/certs/$server_file_name.cert.pem\n"
-      printf "2.  Server key for $server_name: $signing_ca_dir/private/$server_file_name.key.pem\n"
+      printf "1.  Server certificate for $server_name: $top_level_dir/$signing_ca_dir/certs/$server_file_name.cert.pem\n"
+      printf "2.  Server key for $server_name: $top_level_dir/$signing_ca_dir/private/$server_file_name.key.pem\n"
+      printf "3.  Signing CA certificate chain (already existing): $top_level_dir/$signing_ca_dir/certs/ca-chain.cert.pem\n"
       printf "\n******************************************************************************\n"
       break
       ;;
@@ -397,6 +447,15 @@ action_top_menu () {
       get_root_ca_password
       get_new_signing_ca_info
       create_signing_ca
+
+      printf "\n\n"
+      printf "******************************************************************************\n"
+      printf "OUTPUT SUMMARY\n\n"
+      printf "Store this information for future reference\n\n"
+
+      printf "1.  Signing CA password (keep secret): $signing_ca_password\n"
+      printf "2.  Signing CA certificate chain: $top_level_dir/$signing_ca_dir/certs/ca-chain.cert.pem\n"
+      printf "\n******************************************************************************\n"
       break
       ;;
     "Quit")
@@ -404,6 +463,7 @@ action_top_menu () {
       ;;
     esac
   done
+  printf "\n\n"
   action_top_menu
 }
 
@@ -427,8 +487,7 @@ cd "$1"
 if [ ! $? -eq 0 ]; then
   exit 1
 fi
-
-clear
+top_level_dir="$(pwd)"
 
 if [ -e "./cert-helper-config" ]; then
   source "./cert-helper-config"
@@ -439,15 +498,12 @@ fi
 
 root_ca_dir="root-ca"
 
-clear
-
 printf "******************************************************************************\n"
 printf "* cert-helper\n"
 printf "******************************************************************************\n\n"
-printf "This tool manages all the certificates you need to use Secret Server.\n"
 
 if [ "$has_config" -eq 0 ]; then
-  action_create_new
+  action_top_menu_new
 else
   action_top_menu
 fi
