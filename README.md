@@ -38,30 +38,60 @@ But if you've looked at these and thought, "There has to be a simpler way!", the
 
 Secret Server uses X-509 certificates to authenticate clients and servers. This section assumes that you don't have this set up yet. If you already have a certificate authority that can issue both client and server certificates, you can skip ahead.
 
-Otherwise, create a directory to hold your certificates and type:
+### Use cert-helper to create your certificate authority and certificates
+
+Create a directory to hold your certificates and type:
 
 ```
 ./cert-herlper.sh /path/to/cert/directory
 ```
 
 You can use cert-helper to create files for local testing or production use.
-
+ 
 __Tips__
 
 * Be sure to save the generated passwords in a secure place like a password manager. You will need them to create new certificates and to install your client certificate.
-* You should save these files in a secure location. A good compromise between convenience and security is to create an encrypted volume using something like Veracrypt. You should only mount this volume when you need to create new certificates.
+* Save these files in a secure location. A good compromise between convenience and security is to create an encrypted volume using something like [VeraCrypt](https://www.veracrypt.fr/en/Downloads.html). You should only mount this volume when you need to create new certificates.
 
-__Extra steps for production systems__
+### Install your root server certificate
 
-If you are using these certificates in a production system, you should take additional steps.
+You should install your root certificate on every computer that you want to automatically trust the certificates you create.
 
-1. Make a copy of `root-ca/certs/root-ca.cert.pem`. You will be installing this certificate widely
-2. Move the entire `root-ca` directory to its own encrypted storage. Ideally, you should keep this offline. You will only need to use it if you need to create another signing CA, so it will not inconvenience you to keep it offline.
-3. Install `root-ca.cert.pem` as a trusted certificate using the tools in your operating system
+If you are using the certificates in production, you will want to install the coot certificate on evy client computer that will connect to the server.
 
-__Install your personal client certificate__
+If you are using the certificates for local testing, you should install the certificate on your own computer.
+
+__To install a root certificate on a Mac:__
+
+1. Open _Keychain Access_ (found in Applications » Utilities)
+2. Select the _System_ keychain
+3. Drag and drop `root-ca.cert.pem` into the list of certificates. It will show up with a red X indicating it is not trusted.
+4. Double click the name of your certificate
+5. Expand the "Trust" section
+6. Change _When using this certificate_ to _Always Trust_
+7. Enter your system password as required
+8. Your root certificate should show with a blue plus sign indicating that it is trusted.
+
+### Install your personal client certificate
 
 To connect to Secret Server, you will need to install the client certificate on your system. On Mac and Windows, just double-click the pfx file and supply your password.
+
+__To install a client certificate on a Mac:__
+
+1. Open _Keychain Access_ (found in Applications » Utilities)
+2. Select the _login_ keychain
+3. Drag and drop `signing-ca-1/private/your-email-address.pfx` into the list.
+4. Enter the generated password for the PFX file
+
+### Install you server certificate files
+
+
+
+### Extra security for production systems
+
+If you are using these certificates in a production system, you should take extra care to secure your root CA files. These can be used to create certificates that are trusted by anyone with the root certificate installed, so you don't want them to get into the wrong hands.
+
+Move the entire `root-ca` directory to its own encrypted storage. Ideally, you should keep this offline. You will only need to use it if you need to create another signing CA, so it will not inconvenience you to keep it offline.
 
 ## Key concepts
 

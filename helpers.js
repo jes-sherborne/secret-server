@@ -54,7 +54,18 @@ class WebError extends Error {
   }
 }
 
+function getEmailFromCert(userCertificate) {
+  if (userCertificate.subjectaltname && userCertificate.subjectaltname.startsWith("email:")) {
+    return userCertificate.subjectaltname.slice(6);
+  }
+  if (userCertificate.subject && userCertificate.subject.emailAddress && userCertificate.subject.emailAddress.length) {
+    return userCertificate.subject.emailAddress;
+  }
+  return null;
+}
+
 exports.noop = noop;
 exports.toHtml = toHtml;
 exports.WebError = WebError;
 exports.defaults = defaults;
+exports.getEmailFromCert = getEmailFromCert;

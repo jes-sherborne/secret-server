@@ -311,7 +311,7 @@ function create(options, middleware) {
       var userCertificate = req.socket.getPeerCertificate();
       
       html.push('<p>');
-      html.push('email: <strong>' + helpers.toHtml(userCertificate.subject.emailAddress) + '</strong><br/>');
+      html.push('email: <strong>' + helpers.toHtml(helpers.getEmailFromCert(userCertificate)) + '</strong><br/>');
       html.push('Name: <strong>' + helpers.toHtml(userCertificate.subject.CN) + '</strong>');
       html.push('</p>');
       
@@ -389,7 +389,7 @@ function create(options, middleware) {
       var userCertificate = req.socket.getPeerCertificate();
       
       fileSystem.addUser({
-          id: userCertificate.subject.emailAddress,
+          id: helpers.getEmailFromCert(userCertificate),
           name: userCertificate.subject.CN,
           groups: new Set(),
           role: registerAsAdmin ? "admin" : "user",

@@ -195,11 +195,11 @@ SecretFilesystem.prototype.getUser = function(id) {
 };
 
 SecretFilesystem.prototype.getUserForCert = function(cert) {
-  var user;
-  if (!cert || !cert.fingerprint || !cert.subject || !cert.subject.emailAddress || !cert.subject.CN) {
+  var user, emailAddress = helpers.getEmailFromCert(cert);
+  if (!cert || !cert.fingerprint || !cert.subject || !emailAddress || !cert.subject.CN) {
     return null;
   }
-  user = this.getUser(cert.subject.emailAddress);
+  user = this.getUser(emailAddress);
   if (!user) {
     return null;
   }
@@ -420,14 +420,22 @@ SecretFilesystem.prototype.getCertificateInfo = function(fileData, callback) {
         return;
       }
       pem.verifySigningChain(fileData, this.sslCA, (err, isVerified) => {
+        var email;
+        
         if (err) {
           callback(err);
           return;
         }
+        
+        if (certInfo.san && certInfo.san.email && certInfo.san.email.length) {
+          email = certInfo.san.email[0];
+        } else {
+          email = certInfo.emailAddress;
+        }
         callback(null, {
           isVerified: isVerified,
           certFingerprint: (oCertFingerprint.fingerprint || "").toUpperCase(),
-          emailAddress: (certInfo.emailAddress || "").toLowerCase(),
+          emailAddress: (email || "").toLowerCase(),
           commonName: certInfo.commonName,
           validStart: new Date(certInfo.validity.start),
           validEnd: new Date(certInfo.validity.end),
