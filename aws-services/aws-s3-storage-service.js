@@ -1,6 +1,5 @@
 const AWS = require("aws-sdk");
 const helpers = require("../helpers");
-const console = require("console");
 
 function AwsS3StorageService(options) {
   options = helpers.defaults({}, options, {
@@ -25,35 +24,19 @@ function AwsS3StorageService(options) {
 AwsS3StorageService.prototype.load = function(callback) {
   var self = this;
   
-  var listObjectParams = {Bucket: this._bucket};
-  var keyList = [];
   var nRemaining = 0;
   var items = {users: {}, files: {}};
   var lastError = null;
   
-  getObjectList();
+  this._getKeyList(function(err, keyList) {
+    if (err) {
+      callback(err);
+      return;
+    }
+    loadItems(keyList);
+  });
   
-  function getObjectList() {
-    self._s3.listObjectsV2(listObjectParams, function (err, result) {
-      if (err) {
-        callback(err);
-        return;
-      }
-      
-      for (var i = 0; i < result.Contents.length; i++) {
-        keyList.push(result.Contents[i].Key);
-      }
-      
-      if (result.IsTruncated) {
-        listObjectParams.ContinuationToken = result.NextContinuationToken;
-        process.nextTick(getObjectList);
-      } else {
-        loadItems();
-      }
-    });
-  }
-  
-  function loadItems() {
+  function loadItems(keyList) {
     var loadsPer100ms = Math.max(Math.round(self._loadRequestsPerSecond / 10), 1);
     var nChunks, iChunk;
     nRemaining = keyList.length;
@@ -166,6 +149,73 @@ AwsS3StorageService.prototype._updateData = function(id, itemType, dataType, dat
     Key: itemType + "/" + id + "/" + dataType,
     ServerSideEncryption: "AES256"
   }, callback);
+};
+
+AwsS3StorageService.prototype._getKeyList = function(callback) {
+  var self = this, listObjectParams = {Bucket: this._bucket};
+  var keyList = [];
+  
+  getObjectList();
+  
+  function getObjectList() {
+    self._s3.listObjectsV2(listObjectParams, function (err, result) {
+      if (err) {
+        callback(err);
+        return;
+      }
+      
+      for (var i = 0; i < result.Contents.length; i++) {
+        keyList.push(result.Contents[i].Key);
+      }
+      
+      if (result.IsTruncated) {
+        listObjectParams.ContinuationToken = result.NextContinuationToken;
+        process.nextTick(getObjectList);
+      } else {
+        callback(null, keyList);
+      }
+    });
+  }
+  
+};
+
+AwsS3StorageService.prototype.erase = function(callback) {
+  var self = this;
+  
+  this._getKeyList(function(err, keyList) {
+    if (err) {
+      callback(err);
+      return;
+    }
+    
+    deleteItems(keyList)
+  });
+  
+  function deleteItems(keyList) {
+    var params = {
+      Bucket: self._bucket,
+      Delete: {
+        Objects: []
+      }
+    };
+  
+    while (keyList.length && params.Delete.Objects.length < 1000) {
+      params.Delete.Objects.push({Key: keyList.pop()});
+    }
+  
+    if (params.Delete.Objects.length) {
+      self._s3.deleteObjects(params, function(err) {
+        if (err) {
+          callback(err);
+          return;
+        }
+        deleteItems(keyList);
+      });
+    } else {
+      callback();
+    }
+  }
+  
 };
 
 exports.create = function(options) {
