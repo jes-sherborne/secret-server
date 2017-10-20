@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+
+var crypto = require("crypto");
+var os = require("os");
+var fs = require("fs");
+var path = require("path");
+
+var config = {
+  allowAutoRegister: true,
+  allowAutoRegisterFirstAdmin: true,
+  adminPort: 1880,
+  davPort: 1800,
+  encryption: "aes-128-gcm",
+  sslKey: path.normalize(__dirname + "/../ssl/" + os.hostname().toLowerCase() + ".key.pem"),
+  sslCert: path.normalize(__dirname + "/../ssl/" + os.hostname().toLowerCase() + ".cert.pem"),
+  sslCA: path.normalize(__dirname + "/../ssl/ca-chain.cert.pem"),
+  storageService: {
+    provider: "file-system",
+    config: {
+      rootDirectory: path.normalize(__dirname + "/data")
+    }
+  },
+  keyService: {
+    provider: "local-symmetric",
+    config: {
+      secretKey: crypto.randomBytes(16).toString("hex")
+    }
+  }
+};
+
+fs.writeFileSync(path.join(__dirname, "config.json"), JSON.stringify(config, null, 2));

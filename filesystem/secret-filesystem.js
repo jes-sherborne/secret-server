@@ -11,7 +11,6 @@ function SecretFilesystem(options) {
   var onLoadComplete = options.onLoadComplete;
   this.keyService = options.keyService;
   this.storageService = options.storageService;
-  this.keyId = options.keyId;
   this.keySpec = options.keySpec;
   this.sslCA = options.sslCA;
   
@@ -213,7 +212,7 @@ SecretFilesystem.prototype.getUserForCert = function(cert) {
 };
 
 SecretFilesystem.prototype.encrypt = function(dataBuffer, aad, embedAad, callback) {
-  envelopeEncryption.encrypt(this.keyId, this.keySpec, this.keyService, dataBuffer, aad, embedAad, callback);
+  envelopeEncryption.encrypt(this.keyService.defaultKeyId, this.keySpec, this.keyService, dataBuffer, aad, embedAad, callback);
 };
 
 SecretFilesystem.prototype.decrypt = function(dataBuffer, aad, callback) {

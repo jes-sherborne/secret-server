@@ -28,7 +28,6 @@ var storageService = getService("storageService", {
 });
 
 var fileSystem = new SecretFilesystem({
-  keyId: appConfig.defaultKeyId,
   keySpec: appConfig.encryption,
   keyService: keyService,
   sslCA: sslCA,
@@ -54,7 +53,7 @@ function onLoadComplete(err) {
   }, davServer.create({fileSystem: fileSystem}, middleware));
   
   appDav.listen(appConfig.davPort, function() {
-    console.log("Dav server is listening on " + appDav.address().port);
+    console.log("Dav server is listening on port " + appDav.address().port);
   });
   
   var adminOptions = {
@@ -81,11 +80,12 @@ function onLoadComplete(err) {
   }, admin.create(adminOptions, middleware));
   
   appAdmin.listen(appConfig.adminPort, function() {
-    console.log("Admin is listening on " + appAdmin.address().port);
+    var port = appAdmin.address().port;
+    console.log("Admin is listening on port " + port);
     if (adminOptions.allowAutoRegister) {
-      console.log("Users can auto-register at /register");
+      console.log("Users can auto-register at https://localhost:" + port + "/register");
       if (adminOptions.adminToken) {
-        console.log("The first administrator can auto-register at /register?token=" + adminOptions.adminToken);
+        console.log("The first administrator can auto-register at https://localhost:" + port + "/register?token=" + adminOptions.adminToken);
       }
       if (appConfig.allowAutoRegisterFirstAdmin && fileSystem.adminUserCount > 0) {
         console.log("We recommend setting 'allowAutoRegisterFirstAdmin = false' in your configuration file now that your system has at least one administrator.");

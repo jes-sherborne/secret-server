@@ -1,6 +1,6 @@
 # DISCLAIMER
 
-This is still very much _work-in-progress_. It is both under-tested and largely undocumented. Neither are desirable attributes in a secure system.
+This is still work-in-progress. It is both under-tested and largely undocumented. Neither are desirable attributes in a secure system.
 
 I don't yet use this for secrets I care about, and you shouldn't either. 
 
@@ -12,86 +12,70 @@ Even a small software development group has dozens of digital secrets. Usually t
 * Database connection strings
 * Certificates for access to remote servers
 
-Without some kind of system, these keys can be difficult to distribute and track.
+Without some kind of system, these keys can be difficult to distribute and track. In practice, many teams distribute these secrets by hand or with some hastily-assembled scripts and hope for the best.
 
-Secret Server makes it straightforward to manage your secrets. It stores all your keys in an encrypted repository, and lets you choose who can access each key.
+Secret Server provides a simple way to store, distribute, track, and secure your secrets.
 
-Each user gets their own view with just the secrets they have access to. It works just like a remote disk, so no special tools are needed to access them. Unlike a regular filesystem, the secrets are only stored in memory. Secrets are decrypted for the each user only when needed.
+It is easy to install, easy to configure, and easy to maintain.
 
-Secret Server runs as a standalone service, and it has special features that make it work especially well on cloud services, AWS in particular.
+It can run anywhere, but it has special features that make it especially well suited to AWS.
 
-## Goals and limitations
+## Installing Secret Server locally
 
-In any security system, there are inherent trade-offs between security and convenience. 
+To try out Secret Server on your machine, follow these steps
 
-Secret Server strives to make everyday development systems more secure by making good security practices more convenient. Lots of teams distribute secrets by hand and hope for the best. They know this is bad, but there hasn't an easy-to-use alternative.
+1. Install [node.js](https://nodejs.org/en/download/).
+2. Get the server files and set up directories
+    
+    ```
+    $ git clone https://github.com/jes-sherborne/secret-server.git
+    $ mkdir secret-server/ssl
+    $ mkdir secret-server/data
+    ```
+    
+3. Use cert-helper to set up your certificates
+    
+    ```
+    git clone https://github.com/jes-sherborne/cert-helper.git
+    mkdir ~/local-ca
+    ./cert-helper/cert-helper.sh ~/local-ca
+    ```
 
-By the same token, complex systems are inherently harder to secure. It can be easy to make a seemingly-innocuous configuration change that ruins the overall security of the system, even if the underlying implemetation is done well.
+    * Choose _Create files for local testing_
+    * For the organization, enter your name, your company name, or whatever suits you
+    * Enter your name and email address at the prompts
+    * Save the generated passwords with a password manager
+    * Install your server root certificate ([instructions](https://github.com/jes-sherborne/cert-helper#trusting-your-root-certificate))
+    * Install your client certificate ([instructions](https://github.com/jes-sherborne/cert-helper#working-with-client-certificates))
+    
+4. Create the configuration file
+    
+    ```
+    ./config/make-local-config
+    ```
 
-Secret Server attempts to address this by being as simple as possible. It does one thing—distribute secrets—using well-established techniques in a straightforward way.
+5. Add your server certificate files
+    
+    you will need to substitute your server name below:
+    
+    ```
+    $ cp ~/local-ca/signing-ca-1/certs/ca-chain.cert.pem secret-server/ssl
+    $ cp ~/local-ca/signing-ca-1/certs/your-server.cert.pem secret-server/ssl
+    $ cp ~/local-ca/signing-ca-1/private/your-server.key.pem secret-server/ssl
+    ```
+    
+6. Run the server
 
-There are other systems that solve this problem, including Vault from Hashicorp and Key Whiz from Square. I think they're both great. But I also think that they can be very complex. If you need the additional capabilities that these systems provide, by all means use one.
+     ```
+     $ cd secret-server
+     $ node server.js config.config.json
+     ```
 
-But if you've looked at these and thought, "There has to be a simpler way!", then Secret Server may be for you.
-
-## Getting started
-
-Secret Server uses X-509 certificates to authenticate clients and servers. This section assumes that you don't have this set up yet. If you already have a certificate authority that can issue both client and server certificates, you can skip ahead.
-
-### Use cert-helper to create your certificate authority and certificates
-
-Create a directory to hold your certificates and type:
-
-```
-./cert-herlper.sh /path/to/cert/directory
-```
-
-You can use cert-helper to create files for local testing or production use.
- 
-__Tips__
-
-* Be sure to save the generated passwords in a secure place like a password manager. You will need them to create new certificates and to install your client certificate.
-* Save these files in a secure location. A good compromise between convenience and security is to create an encrypted volume using something like [VeraCrypt](https://www.veracrypt.fr/en/Downloads.html). You should only mount this volume when you need to create new certificates.
-
-### Install your root server certificate
-
-You should install your root certificate on every computer that you want to automatically trust the certificates you create.
-
-If you are using the certificates in production, you will want to install the coot certificate on evy client computer that will connect to the server.
-
-If you are using the certificates for local testing, you should install the certificate on your own computer.
-
-__To install a root certificate on a Mac:__
-
-1. Open _Keychain Access_ (found in Applications » Utilities)
-2. Select the _System_ keychain
-3. Drag and drop `root-ca.cert.pem` into the list of certificates. It will show up with a red X indicating it is not trusted.
-4. Double click the name of your certificate
-5. Expand the "Trust" section
-6. Change _When using this certificate_ to _Always Trust_
-7. Enter your system password as required
-8. Your root certificate should show with a blue plus sign indicating that it is trusted.
-
-### Install your personal client certificate
-
-To connect to Secret Server, you will need to install the client certificate on your system. On Mac and Windows, just double-click the pfx file and supply your password.
-
-__To install a client certificate on a Mac:__
-
-1. Open _Keychain Access_ (found in Applications » Utilities)
-2. Select the _login_ keychain
-3. Drag and drop `signing-ca-1/private/your-email-address.pfx` into the list.
-4. Enter the generated password for the PFX file
-
-### Install you server certificate files
-
-
-
-### Extra security for production systems
-
-If you are using these certificates in a production system, you should take extra care to secure your root CA files. These can be used to create certificates that are trusted by anyone with the root certificate installed, so you don't want them to get into the wrong hands.
-
-Move the entire `root-ca` directory to its own encrypted storage. Ideally, you should keep this offline. You will only need to use it if you need to create another signing CA, so it will not inconvenience you to keep it offline.
+7. Register as an administrator
+   
+   On the console, you will see a line that starts with, "The first administrator can auto-register". Follow this URL, and you will automatically be added as an administrator.
+   
+   Ordinary users can register themselves by visiting the auto-registration url (/register).
 
 ## Key concepts
 
@@ -109,17 +93,17 @@ Some users are *administrators*. Administrators can add files, add users, and ed
 
 Secret Server encrypts all sensitive data in storage. While it is a good practice to keep your storage secure and to limit access, Secret Server's security does not depend on it.
 
-In addition, all data is authenticated to prevent tampering. This means that if an attacker gains access to the storage layer, the most they could do is prevent users from accessing secrets by deleting or mangling the data in some way. They can't alter the data to give any user access to different secrets.
+In addition, all data is authenticated to prevent tampering. This means that if an attacker gains access to the storage layer, the most they can do is prevent users from accessing secrets by deleting or mangling the data in some way. They can't alter the data to give any user access to different secrets.
 
 All secrets are stored encrypted. They are decrypted just-in-time when they are needed, and they are discarded immediately afterward.
 
 Secrets are stored using a technique called envelope encryption. Each secret is encrypted with a symmetric block cipher, and each secret uses a unique encryption key. These keys are provisioned, encrypted and decrypted by a separate key provider.
 
-If you are running on AWS, you can use Amazon KMS to handle these keys for you, and SS includes an adapter that will handle all the details automatically.
+If you are running on AWS, you can use Amazon KMS to handle these keys for you, and Secret Server includes an adapter that will handle all the details automatically.
 
-If you are running locally, you can configure SS to handle this locally.
+If you are running locally, you can configure Secret Server to handle this locally.
 
-When asked to decrypt a key, SS first opens the envelope and determines who provided the secret key. It asks this service to decrypt the key. It then uses this key to decrypt the actual secret.
+When asked to decrypt a key, Secret Server first opens the envelope and asks the encryption service to provide the secret-specific decryption key. It then uses this key to decrypt the actual secret.
 
 In addition to the secret, the envelope also contains information about who is allowed to access the secrets. This data is authenticated to prevent tampering. If it has been modified, the underlying data cannot be decrypted.
 

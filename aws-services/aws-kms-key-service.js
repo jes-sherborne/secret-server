@@ -1,4 +1,5 @@
 const AWS = require("aws-sdk");
+const helpers = require("../helpers");
 
 /**************************************************************
  This is a straightforward application of AWS's KMS.
@@ -6,8 +7,15 @@ const AWS = require("aws-sdk");
  of AWS access privs.
  **********************************************************/
 
-function AwsKmsKeyService() {
-  const kms = new AWS.KMS();
+function AwsKmsKeyService(config) {
+  config = helpers.defaults({}, config, {
+    apiVersion: '2014-11-01',
+    region: null,
+    defaultKeyId: null
+  });
+  
+  const kms = new AWS.KMS(config);
+  this.defaultKeyId = config.defaultKeyId;
   
   this.generateDataKey = function(keyId, lengthInBytes, callback) {
     var params = {KeyId: keyId};

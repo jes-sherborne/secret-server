@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const authenticatedEncryption = require("../crypto/authenticated-encryption");
 const cryptoUtil = require("../crypto/crypto-util");
+const helpers = require("../helpers");
 
 /**************************************************************
  This is an adequate implementation for low-risk secrets and testing.
@@ -8,6 +9,12 @@ const cryptoUtil = require("../crypto/crypto-util");
  **********************************************************/
 
 function LocalSymmetricKeyService(options) {
+  options = helpers.defaults(options, {
+    keyId: "default-key",
+    algorithm: "aes-128-gcm",
+    secretKey: null,
+    secretKeyEncoding: "hex"
+  });
   var _keyId = options.keyId;
   var _algorithm = options.algorithm;
   var _key = Buffer.from(options.secretKey, options.secretKeyEncoding || null);
@@ -21,6 +28,8 @@ function LocalSymmetricKeyService(options) {
   if (_key.length !== cryptoUtil.ALGORITHMS[_algorithm].keyLength) {
     throw new Error("secretKey is the wrong length for the selected algorithm. Must be " + cryptoUtil.ALGORITHMS[_algorithm].keyLength + " bytes");
   }
+  
+  this.defaultKeyId = _keyId;
   
   this.generateDataKey = function(keyId, lengthInBytes, callback) {
     var dataKey;
