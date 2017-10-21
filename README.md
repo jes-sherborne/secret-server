@@ -28,9 +28,12 @@ To try out Secret Server on your machine, follow these steps
 2. Get the server files and set up directories
     
     ```
-    $ git clone https://github.com/jes-sherborne/secret-server.git
-    $ mkdir secret-server/ssl
-    $ mkdir secret-server/data
+    git clone https://github.com/jes-sherborne/secret-server.git
+    cd secret-server
+    mkdir ssl
+    mkdir data
+    npm install
+    cd ..
     ```
     
 3. Use cert-helper to set up your certificates
@@ -51,7 +54,7 @@ To try out Secret Server on your machine, follow these steps
 4. Create the configuration file
     
     ```
-    ./config/make-local-config
+    ./secret-server/config/make-local-config
     ```
 
 5. Add your server certificate files
@@ -59,24 +62,22 @@ To try out Secret Server on your machine, follow these steps
     you will need to substitute your server name below:
     
     ```
-    $ cp ~/local-ca/signing-ca-1/certs/ca-chain.cert.pem secret-server/ssl
-    $ cp ~/local-ca/signing-ca-1/certs/your-server.cert.pem secret-server/ssl
-    $ cp ~/local-ca/signing-ca-1/private/your-server.key.pem secret-server/ssl
+    cp ~/local-ca/signing-ca-1/certs/ca-chain.cert.pem secret-server/ssl
+    cp ~/local-ca/signing-ca-1/certs/your-server.cert.pem secret-server/ssl
+    cp ~/local-ca/signing-ca-1/private/your-server.key.pem secret-server/ssl
     ```
     
 6. Run the server
 
      ```
-     $ cd secret-server
-     $ node server.js config.config.json
+     cd secret-server
+     node server.js config/config.json
      ```
 
 7. Register as an administrator
    
    On the console, you will see a line that starts with, "The first administrator can auto-register". Follow this URL, and you will automatically be added as an administrator.
    
-   Ordinary users can register themselves by visiting the auto-registration url (/register).
-
 ## Key concepts
 
 Each secret is represented by a *file*. All files are read-only. Once a secret has been added, it cannot be changed.
