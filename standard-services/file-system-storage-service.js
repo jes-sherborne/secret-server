@@ -101,7 +101,7 @@ FileSystemStorageService.prototype._updateData = function(filePath, data, callba
 
 function makeRequiredDirectory(directory) {
   try {
-    fs.mkdirSync(directory, 0o600);
+    fs.mkdirSync(directory, 0o700);
   } catch (e) {
     if (e.code !== "EEXIST") {
       throw e;
