@@ -17,7 +17,7 @@ var config = {
   storageService: {
     provider: "file-system",
     config: {
-      rootDirectory: path.normalize(__dirname + "/data")
+      rootDirectory: path.normalize(__dirname + "/../data")
     }
   },
   keyService: {
