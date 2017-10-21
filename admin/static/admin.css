@@ -305,3 +305,9 @@ div.auto-register form {
 div.auto-register .button-bar {
   margin-top: 24px;
 }
+
+div.no-groups {
+  font-size: 80%;
+  color: #999;
+  padding: 6px 12px 0;
+}

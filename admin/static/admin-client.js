@@ -150,7 +150,7 @@ function renderUserList() {
 }
 
 function groupsToCheckboxes(existing) {
-  var html = [], oExisting = {}, i, checked;
+  var html = [], oExisting = {}, i, checked, hasGroups = false;
   
   if (existing) {
     for (i = 0; i < existing.length; i++) {
@@ -163,8 +163,13 @@ function groupsToCheckboxes(existing) {
     } else {
       checked = "";
     }
+    hasGroups = true;
     html.push('<label><input type="checkbox" name="groups" value="' + toHtml(groupName) + '"' + checked + '>' + toHtml(groupName) + '</label>');
   });
+  
+  if (!hasGroups) {
+    html.push('<div class="no-groups">no groups defined</div>');
+  }
   return html.join("");
 }
 
@@ -259,8 +264,19 @@ function showDialog(formHtml) {
   
   if (fileInput && nameInput) {
     fileInput.onchange = function() {
+      var newName;
       if (fileInput.files[0]) {
-        nameInput.value = fileInput.files[0].name
+        newName = fileInput.files[0].name.toLowerCase();
+        newName = newName.replace(/^[^a-z0-9_]+/, "");
+        newName = newName.replace(/\s+/g, "_");
+        newName = newName.replace(/[^a-z0-9_.-]+/g, "");
+        newName = newName.replace(/_{2,}/g, "_");
+        newName = newName.replace(/\.{2,}/g, ".");
+        newName = newName.replace(/-{2,}/g, "-");
+        if (nameInput.maxLength) {
+          newName = newName.slice(0, -1 + nameInput.maxLength);
+        }
+        nameInput.value = newName
       } else {
         nameInput.value = "";
       }
