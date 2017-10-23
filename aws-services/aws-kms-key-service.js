@@ -33,7 +33,7 @@ function AwsKmsKeyService(config) {
         callback(err);
         return;
       }
-      callback(null, result.CiphertextBlob, result.Plaintext);
+      callback(null, result.Plaintext, result.CiphertextBlob);
     });
   };
   
