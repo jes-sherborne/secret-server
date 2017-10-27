@@ -20,63 +20,15 @@ It is easy to install, easy to configure, and easy to maintain.
 
 It can run anywhere, but it has special features that make it especially well suited to AWS.
 
-## Installing Secret Server locally
+## Installing Secret Server
 
-To try out Secret Server on your machine, follow these steps
+Secret-server has extensive documentation to help you install it securely in a variety of configurations:
 
-1. Install [node.js](https://nodejs.org/en/download/).
-2. Get the server files and set up directories
-    
-    ```
-    git clone https://github.com/jes-sherborne/secret-server.git
-    cd secret-server
-    mkdir ssl
-    mkdir data
-    npm install
-    cd ..
-    ```
-    
-3. Use cert-helper to set up your certificates
-    
-    ```
-    git clone https://github.com/jes-sherborne/cert-helper.git
-    mkdir ~/local-ca
-    ./cert-helper/cert-helper.sh ~/local-ca
-    ```
+* [Installing on a local machine](docs/local-installation-guide.md)
+* [Configuring AWS for secret-server](docs/configure-aws.md)
+* [Installing as a service on Ubuntu](docs/ubuntu-installation-guide.md)
 
-    * Choose _Create files for local testing_
-    * For the organization, enter your name, your company name, or whatever suits you
-    * Enter your name and email address at the prompts
-    * Save the generated passwords with a password manager
-    * Install your server root certificate ([instructions](https://github.com/jes-sherborne/cert-helper#trusting-your-root-certificate))
-    * Install your client certificate ([instructions](https://github.com/jes-sherborne/cert-helper#working-with-client-certificates))
-    
-4. Create the configuration file
-    
-    ```
-    ./secret-server/config/make-local-config
-    ```
-
-5. Add your server certificate files
-    
-    you will need to substitute your server name below:
-    
-    ```
-    cp ~/local-ca/signing-ca-1/certs/ca-chain.cert.pem secret-server/ssl
-    cp ~/local-ca/signing-ca-1/certs/your-server.cert.pem secret-server/ssl
-    cp ~/local-ca/signing-ca-1/private/your-server.key.pem secret-server/ssl
-    ```
-    
-6. Run the server
-
-     ```
-     cd secret-server
-     node server.js config/config.json
-     ```
-
-7. Register as an administrator
-   
-   On the console, you will see a line that starts with, "The first administrator can auto-register". Follow this URL, and you will automatically be added as an administrator.
+In addition, there is a [configuration guide](docs/config-file-reference.md).
    
 ## Key concepts
 
@@ -92,20 +44,35 @@ Some users are *administrators*. Administrators can add files, add users, and ed
 
 # Security approach
 
-Secret Server encrypts all sensitive data in storage. While it is a good practice to keep your storage secure and to limit access, Secret Server's security does not depend on it.
+Secret-server uses five core mechanisms to protect your secrets
+1. All data is encrypted using proven implementations of standard encryption algorithms
+2. All data is encrypted using authenticated encryption, meaning that if it has been altered, decryption fails. In
+other words, an attacker cannot modify the storage layer to gain unauthorized access, even if they have a valid user certificate
+3. All access is controlled via X.509 certificates. The client and the server are both required to present compatible
+certificates, which ensures that both the client and the server are validated.
+4. Administrative functions are logically separate from access to secrets and these two capabilities run on different 
+ports. This means that secrets can be administered via a public interface, but access to the secrets themselves can be 
+firewalled to a restricted set of endpoints. This is particularly useful if you are running secret-server in a public
+cloud or remote data center.
+5. Secrets are decrypted on-demand when an authorized user requests it. Secret-server only holds the decrypted secret long 
+enough to transmit it to the client. It clears the memory afterward.
 
-In addition, all data is authenticated to prevent tampering. This means that if an attacker gains access to the storage layer, the most they can do is prevent users from accessing secrets by deleting or mangling the data in some way. They can't alter the data to give any user access to different secrets.
+Secret Server encrypts all sensitive data in storage. While it is a good practice to keep your storage secure and to 
+limit access, Secret Server's security does not depend on it.
 
-All secrets are stored encrypted. They are decrypted just-in-time when they are needed, and they are discarded immediately afterward.
+In addition, all data is authenticated to prevent tampering. This means that if an attacker gains access to the storage 
+layer, the most they can do is prevent users from accessing secrets by deleting or mangling the data in some way. They 
+can't alter the data to give any user access to different secrets.
 
-Secrets are stored using a technique called envelope encryption. Each secret is encrypted with a symmetric block cipher, and each secret uses a unique encryption key. These keys are provisioned, encrypted and decrypted by a separate key provider.
+### Encryption details
 
-If you are running on AWS, you can use Amazon KMS to handle these keys for you, and Secret Server includes an adapter that will handle all the details automatically.
+Secrets are stored using a technique called envelope encryption. Each secret is encrypted with a symmetric block cipher, 
+(either AES-128-GCM or AES-256-GCM) and each secret uses a unique encryption key. These keys are provisioned, encrypted and 
+decrypted by a separate key provider. If you are running on AWS, you can use Amazon KMS to handle these keys for you, 
+and Secret Server includes an adapter that will handle all the details automatically. If you are running locally, you 
+can configure Secret Server to handle this internally.
 
-If you are running locally, you can configure Secret Server to handle this locally.
-
-When asked to decrypt a key, Secret Server first opens the envelope and asks the encryption service to provide the secret-specific decryption key. It then uses this key to decrypt the actual secret.
-
-In addition to the secret, the envelope also contains information about who is allowed to access the secrets. This data is authenticated to prevent tampering. If it has been modified, the underlying data cannot be decrypted.
-
-This prevents an attacker with access to the database from modifying access privileges and thereby gaining access to unauthorized data. 
+When asked to decrypt a key, Secret Server first opens the envelope and asks the encryption service to provide the 
+secret-specific decryption key. It then uses this key to decrypt the actual secret. In addition to the secret, the 
+envelope also contains information about who is allowed to access the secrets. This data is authenticated to prevent 
+tampering. If it has been modified, the underlying data cannot be decrypted.

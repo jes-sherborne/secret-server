@@ -61,7 +61,7 @@ sudo chown secret-server /var/secret-server/ssl/*.*
 
 Use your favorite text editor to create the configuration file. You can do something like `pico /var/secret-server/config.json`
 
-Here's a typical config file for an AWS instance:
+Here's a typical config file for an AWS instance. For more details, see the [config file reference](config-file-reference.md)
 
 ```json
 {
