@@ -5,6 +5,7 @@ const console = require("console");
 const path = require("path");
 const helpers = require("../helpers");
 const crypto = require("crypto");
+const mime = require("mime");
 
 function create(options, middleware) {
   const app = express();
@@ -73,7 +74,7 @@ function create(options, middleware) {
     });
     
     formParser.parse(req, function (err, fields, files) {
-      var name, groups, fileSource;
+      var name, groups, fileSource, contentType;
       
       if (err) {
         if (err.status === 413) {
@@ -99,12 +100,18 @@ function create(options, middleware) {
       }
   
       name = name.toLowerCase();
+  
+      contentType = fileSource.headers["content-type"];
+      if (!contentType || !contentType.length) {
+        contentType = mime.getType(name);
+      }
+
       fs.readFile(fileSource.path, function(err, fileData) {
         if (err) {
           finish(err);
           return;
         }
-        fileSystem.addFile({id: name, fileData: fileData, groups: groups}, finish);
+        fileSystem.addFile({id: name, fileData: fileData, groups: groups, contentType: contentType}, finish);
       });
   
       function finish(err) {

@@ -4,7 +4,7 @@ const envelopeEncryption = require("../crypto/envelope-encryption");
 const secretUtil = require("./secret-util");
 const helpers = require("../helpers");
 
-const VERSION = 1;
+const VERSION = 2;
 
 function SecretFile(encryptedBlob, encryptedGroups, parent) {
   SecretItemBase.call(this, encryptedBlob, encryptedGroups, parent);
@@ -28,10 +28,15 @@ SecretFile.prototype.populateFromAad = function(aad) {
   this.createdAt = new Date(parseInt(aad.createdAt));
   this.modifiedAt = new Date(parseInt(aad.modifiedAt));
   
+  if (this.v === 1) {
+    this.contentType = "text/plain"
+  } else {
+    this.contentType = aad.contentType;
+  }
+  
   this._etag = null;
   this.path = "/" + this.id;
   this.isDirectory = false;
-  this.contentType = "text/plain";
 };
 
 SecretFile.prototype.getValue = function(callback) {
@@ -58,13 +63,19 @@ Object.defineProperties(SecretFile.prototype, {
 });
 
 SecretFile.encodeAad = function (obj) {
-  return {
+  var result = {
     v: (obj.v == null ? VERSION : obj.v).toString(),
     id: obj.id,
     contentLength: obj.contentLength.toString(),
     createdAt: (+obj.createdAt).toString(),
     modifiedAt: (+obj.modifiedAt).toString()
   };
+  
+  if (result.v > 1) {
+    result.contentType = obj.contentType || "text/plain";
+  }
+  
+  return result;
 };
 
 SecretFile.isValidFileName = function(name) {
@@ -75,6 +86,16 @@ SecretFile.isValidFileName = function(name) {
     return false;
   }
   return /^[a-z0-9_]+[a-z0-9_.-]*$/.test(name);
+};
+
+SecretFile.isValidContentType = function(contentType) {
+  if (typeof contentType !== "string") {
+    return false;
+  }
+  if (contentType.length < 1 || contentType.length > 128) {
+    return false;
+  }
+  return /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.*-]+$/.test(contentType);
 };
 
 
@@ -97,6 +118,10 @@ SecretFile.validateData = function(item) {
   
   if (!SecretFile.isValidFileBuffer(item.fileData)) {
     throw new helpers.WebError(400, "Invalid file");
+  }
+  
+  if (!SecretFile.isValidContentType(item.contentType)) {
+    throw new helpers.WebError(400, "Invalid contentType");
   }
   
 };

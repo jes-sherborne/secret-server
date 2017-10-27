@@ -5,8 +5,6 @@ const SecretUser = require("./secret-user").SecretUser;
 const SecretFile = require("./secret-file").SecretFile;
 const pem = require("pem");
 
-const VERSION = 1;
-
 function SecretFilesystem(options) {
   var onLoadComplete = options.onLoadComplete;
   this.keyService = options.keyService;

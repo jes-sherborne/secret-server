@@ -9,7 +9,6 @@ const davServer = require("./webdav/dav-server");
 const SecretFilesystem = require("./filesystem/secret-filesystem").SecretFilesystem;
 const admin = require("./admin/admin-server");
 
-
 var appConfig = JSON.parse(fs.readFileSync(process.argv[2]));
 
 
