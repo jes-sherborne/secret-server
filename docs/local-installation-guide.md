@@ -45,6 +45,8 @@ To try out Secret Server on your machine, follow these steps
     cp ~/local-ca/signing-ca-1/private/your-server.key.pem secret-server/ssl
     ```
     
+    Alternatively, you can edit `config.json` to point to these files on your system.
+    
 6. Run the server
 
      ```
