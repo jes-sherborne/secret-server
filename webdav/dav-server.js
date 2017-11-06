@@ -76,8 +76,12 @@ function create(options, middleware) {
       return;
     }
     
-    if (!fileSystem.userHasFile(req.user, req.path)) {
+    if (!fileSystem.hasFile(req.path)) {
       res.sendStatus(404); // Not found
+      return;
+    }
+    if (!fileSystem.userHasFile(req.user, req.path)) {
+      res.sendStatus(403); // Unauthorized
       return;
     }
   
