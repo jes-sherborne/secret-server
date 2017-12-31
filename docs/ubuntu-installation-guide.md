@@ -12,16 +12,20 @@ sudo reboot
 
 ## Set up system for secret-server
 
+Secret-server is supported on both Node 6 and Node 8 LTS releases. You should use the most recent LTS version available. 
+See the [Node website](https://nodejs.org/en/download/) to find out which release to use and modify the code below accordingly.
+
 ```bash
 # install dependencies
 sudo apt-get -y install unzip git build-essential
 
 # install node.js
+# Change the node version number to match the current LTS release.
 cd ~
-wget http://nodejs.org/dist/v6.11.4/node-v6.11.4-linux-x64.tar.gz
+wget http://nodejs.org/dist/v8.9.3/node-v8.9.3-linux-x64.tar.gz
 cd /usr/local
-sudo tar --strip-components 1 -xzf ~/node-v6.11.4-linux-x64.tar.gz
-rm ~/node-v6.11.4-linux-x64.tar.gz
+sudo tar --strip-components 1 -xzf ~/node-v8.9.3-linux-x64.tar.gz
+rm ~/node-v8.9.3-linux-x64.tar.gz
 
 # download secret-server and dependencies
 sudo useradd secret-server
@@ -36,9 +40,10 @@ npm install
 
 ## Add your server certificate files
 
-You need to get the certificate files for your server to work. Assuming that these files are on your local machine, you can do something like this:
+You need to get the certificate files for your server to work.
 
-If you running on a cloud service like AWS, you will need to connect to the instance via SSH. You can use `scp` to upload your key files like this:
+If you running on a cloud service like AWS, you will need to connect to the instance via SSH. 
+Assuming that these files are on your local machine, you can use `scp` to upload your key files like this:
 
 ```bash
 # Run on your local machine, not the secret-server instance
@@ -106,21 +111,21 @@ If everything works correctly, you should see something like:
 Dav server is listening on port 1800
 Admin is listening on port 1880
 Users can auto-register at https://localhost:1880/register
-The first administrator can auto-register at https://localhost:1880/register?token=824a7d6727ed2b8077cb8c7bebb2680a
+The first administrator can auto-register at https://localhost:1880/register?token=1234567890abcdef1234567890abcdef
 ```
 
-From your local machine (where you have a client cert installed), use a web browser to go to `https://localhost:1880/register?token=824a7d6727ed2b8077cb8c7bebb2680a`,
+From your local machine (where you have a client cert installed), use a web browser to go to `https://localhost:1880/register?token=your-token-here`,
 replacing `localhost` with your server name. This auto-registers you as an admin for the system.
 
-Secret-server only generates the administrative auto-register url when there are no administrators in the system. For security, it generates a new token each time it runs.
+Secret-server disables the auto-register url if there are already any administrators in the system. For security, it generates a new token each time it runs.
 
-Now that you have registered as an administrative user, you can disable this feature. Edit your `config.json` file and change `allowAutoRegisterFirstAdmin` to `true`
+Now that you have registered as an administrative user, you can disable this feature by default. Edit your `config.json` file and change `allowAutoRegisterFirstAdmin` to `false`
 
 ## Start secret-server automatically and recover from errors
 
-In recent versions of Ubuntu, systemd is the recommended way to start and manage processes. You do this by creating a service file.
+In recent versions of Ubuntu, systemd is the recommended way to start and manage processes.
 
-Create the file using your favorite editor. For example `sudo pico /etc/systemd/system/secret-server.service`
+To use systemd, you must create a service file for Secret Server, which you can create using your favorite editor. For example `sudo pico /etc/systemd/system/secret-server.service`
 
 Here is a sample file that you can use as-is to start secret-server and restart it automatically:
 

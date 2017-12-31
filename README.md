@@ -71,9 +71,9 @@ Finder, it does not support client certificates, so it won't work for Secret-ser
 
 On Linux, you can use [dav2fs](http://savannah.nongnu.org/projects/davfs2).
 
-**Note on WebDAV security**—Some WebDAV servers have suffered from vulnerabilities. Secret-server is immune from these 
+**Note on WebDAV security**—WebDAV is a complex protocol, and some WebDAV servers have suffered from vulnerabilities. In contrast, Secret-server is immune from these 
 because it implements its own minimal read-only WebDAV server. It doesn't rely on external libraries or general-purpose
-implementations. You can use the WebDAV interface for Secret-server with confidence.
+implementations.
 
 ### Retrieving secrets with node.js
 
@@ -128,11 +128,11 @@ function getSecret(callback) {
 
 ## Key concepts
 
-Each secret is represented by a *file*. All files are read-only. Once a secret has been added, it cannot be changed.
+Each secret is represented by a *file*. All files are read-only and cannot be changed.
 
 Every entity that can connect to the system is a *user*.
 
-Files and users belong to *groups*. A user can access all files from the groups she belongs to.
+Files and users belong to *groups*. A user can access all files from the groups she belongs to. You can changes the groups associated with files and users at any time.
 
 Users are identified by certificates.
 
@@ -155,10 +155,10 @@ enough to transmit it to the client. It clears the memory afterward.
 
 ### Encryption details
 
-Secrets are stored using a technique called envelope encryption. Each secret is encrypted with a symmetric block cipher, 
-(either AES-128-GCM or AES-256-GCM) and each secret uses a unique encryption key. These keys are provisioned, encrypted and 
-decrypted by a separate key provider. If you are running on AWS, you can use Amazon KMS to handle these keys for you, 
-and Secret Server includes an adapter that will handle all the details automatically. If you are running locally, you 
+Secrets are stored using a technique called envelope encryption. Each secret is encrypted with a symmetric block cipher 
+(either AES-128-GCM or AES-256-GCM), and each secret uses a unique encryption key. These keys are provisioned, encrypted, and 
+decrypted by a separate key provider. On AWS you can use Amazon KMS to handle these keys for you; Secret Server includes an 
+adapter that handles all the details automatically. If you are running locally, you 
 can configure Secret Server to handle this internally.
 
 When asked to decrypt a key, Secret Server first opens the envelope and asks the encryption service to provide the 

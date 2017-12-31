@@ -14,14 +14,14 @@ In the Amazon AWS console:
 1. Go to S3
 2. Click _Create Bucket_
 3. Choose a memorable name for your bucket, like _secret-server_.
-4. Choose the region you will use for secret-server
+4. Choose your preferred region
 5. Click _next_
 6. Set properties if you want. Secret-server does not require any changes to these, but feel free to add tags or logging.
 7. Click _next_
 8. Remove all access privileges. You will enable access to this bucket later via a role
 9. Click _next_
 10. Review your settings and click _Create Bucket_.
-11. Take note of the arn. You will need it later.
+11. Take note of the __arn__. You will need it later.
 
 ## Create KMS key
 

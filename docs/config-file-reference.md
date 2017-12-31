@@ -22,7 +22,7 @@ __sslKey:__ (_string_) the path to the ssl secret key file
 
 __sslCert:__ (_string_) the path to the ssl certificate file
 
-__sslKey:__ (_string_) the path to the Certificate Authorty's SSL certificate. This is usually a chain certificate
+__sslKey:__ (_string_) the path to the Certificate Authority's SSL certificate. This is usually a chain certificate
 
 __storageService:__ (_object_) configuration options for the storage service. See below for details. 
 
@@ -30,7 +30,7 @@ __keyService:__ (_object_) configuration options for the key service. See below 
 
 ## Storage services
 
-Secret Server can either store its encrypted data in the file system or in an AWS S3 bucket
+Secret Server stores its encrypted data in the filesystem or an AWS S3 bucket
 
 ### File system
 
@@ -45,7 +45,7 @@ Secret Server can either store its encrypted data in the file system or in an AW
 
 ### AWS S3 bucket
 
-These are representative values, but you will have to change them to match your specific region, endpoint, and bucket
+These are representative values, but you will have to change them to match your specific region, endpoint, and bucket.
 
 ```
   "storageService": {
@@ -66,8 +66,9 @@ AWS KMS provides much stronger security, provided it is configured correctly.
 
 ### Local key service
 
-`secretKey` should be a 16 byte key encoded in hex (32 characters). If you use make-local-config, it will create a cryptographically strong secretKey for you automatically
+Uses Node's built-in OpenSSL implementation to create, encrypt, and decrypt secret keys. The master encryption key is provided in the config file.
 
+`secretKey` is a 16-byte key encoded in hex (32 characters). If you use `make-local-config`, it will generate a cryptographically strong secretKey for you automatically. You can also generate a suitable key using OpenSSL: `openssl rand -hex 16`
 
 ```
   "keyService": {
@@ -77,7 +78,6 @@ AWS KMS provides much stronger security, provided it is configured correctly.
     }
   }
 ```
-
 
 ### AWS KMS key service
 
