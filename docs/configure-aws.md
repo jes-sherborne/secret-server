@@ -160,7 +160,7 @@ In the Amazon AWS console:
     this port in a web browser to add users, add secrets, and manage permissions. There is no way to access secrets
     via this interface.
     
-    Secret access is vial port 1800. This interface allows you to list and access the specific secrets for the user,
+    Secret access is via port 1800. This interface allows you to list and access the specific secrets for the user,
     but there is no administrative capability.
     
     By splitting access this way, you can use a security group to provide administrative access via the internet but 
