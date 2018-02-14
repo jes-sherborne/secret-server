@@ -44,7 +44,7 @@ function createMainUi() {
   document.getElementById("main-content").innerHTML = [
     '<h2>Files</h2>',
     '<div class="button-bar">',
-    '<button id="show-add-file">Add file</button>',
+    '<button id="show-add-file">Add secret</button>',
     '</div>',
     '<div id="file-list"></div>',
     '<h2>Users</h2>',
@@ -55,21 +55,74 @@ function createMainUi() {
   ].join("");
   
   document.getElementById("show-add-file").onclick = function() {
-    showDialog([
-      '<form action="files" method="post" enctype="multipart/form-data">',
-      '<h3>Add new file</h3>',
-      '<label><input type="file" name="file" required /></label>',
-      '<label><div class="caption"><strong>Name</strong> (a-z, 0-9, period, hyphen, underscore)</div>',
-      '<input type="text" name="name" minlength="1" maxlength="64" required pattern="[A-z0-9_]+[A-z0-9_.-]*"/></label>',
-      '<label class="standalone"><div class="caption"><strong>Groups</strong></div></label>',
-      '<div class="groups-checklist">',
-      groupsToCheckboxes(),
-      '</div>',
-      '<label><div class="caption"><strong>Additional groups</strong> (separated by spaces)</div><textarea name="newgroups"></textarea></label>',
-      '<div class="dialog-button-bar"><button type="button" class="link dialog-cancel">Cancel</button><button type="submit" class="dialog-ok">OK</button>',
-      '</div>',
-      '</form>'
-    ].join(""));
+    showDialog(
+      [
+        '<form action="files" method="post" enctype="multipart/form-data">',
+        '<h3>Add new secret</h3>',
+        '<div class="role-radio">',
+        '<label><input type="radio" name="secret-type" value="file" checked>File</label>',
+        '<label><input type="radio" name="secret-type" value="text">Text</label>',
+        '</div>',
+        '<label data-role="file-secret"><input type="file" name="file" required /></label>',
+        '<label data-role="text-secret" class="hidden"><div class="caption"><strong>Secret</strong> (plain text)</div><textarea name="secret-text"></textarea></label>',
+        '<label><div class="caption"><strong>Name</strong> (a-z, 0-9, period, hyphen, underscore)</div>',
+        '<input type="text" name="name" minlength="1" maxlength="64" required pattern="[A-z0-9_]+[A-z0-9_.-]*"/></label>',
+        '<label class="standalone"><div class="caption"><strong>Groups</strong></div></label>',
+        '<div class="groups-checklist">',
+        groupsToCheckboxes(),
+        '</div>',
+        '<label><div class="caption"><strong>Additional groups</strong> (separated by spaces)</div><textarea name="newgroups"></textarea></label>',
+        '<div class="dialog-button-bar"><button type="button" class="link dialog-cancel">Cancel</button><button type="submit" class="dialog-ok">OK</button>',
+        '</div>',
+        '</form>'
+      ].join(""),
+      function(container) {
+        var fileInput = container.querySelector('input[type="file"]');
+        var textInput = container.querySelector('textarea[name="secret-text"]');
+        var nameInput = container.querySelector('input[name="name"]');
+        
+        var optionFile = container.querySelector('input[name="secret-type"][value="file"]');
+        var optionText = container.querySelector('input[name="secret-type"][value="text"]');
+        
+        var fileInputContainer = container.querySelector('[data-role="file-secret"]');
+        var textInputContainer = container.querySelector('[data-role="text-secret"]');
+        
+        if (fileInput && nameInput) {
+          fileInput.onchange = function() {
+            var newName;
+            if (fileInput.files[0]) {
+              newName = fileInput.files[0].name.toLowerCase();
+              newName = newName.replace(/^[^a-z0-9_]+/, "");
+              newName = newName.replace(/\s+/g, "_");
+              newName = newName.replace(/[^a-z0-9_.-]+/g, "");
+              newName = newName.replace(/_{2,}/g, "_");
+              newName = newName.replace(/\.{2,}/g, ".");
+              newName = newName.replace(/-{2,}/g, "-");
+              if (nameInput.maxLength) {
+                newName = newName.slice(0, -1 + nameInput.maxLength);
+              }
+              nameInput.value = newName
+            } else {
+              nameInput.value = "";
+            }
+          };
+        }
+  
+        optionFile.onchange = function() {
+          fileInputContainer.classList.remove("hidden");
+          fileInput.required = true;
+          textInputContainer.classList.add("hidden");
+          textInput.required = false;
+        };
+        optionText.onchange = function() {
+          fileInputContainer.classList.add("hidden");
+          fileInput.required = false;
+          textInputContainer.classList.remove("hidden");
+          textInput.required = true;
+        };
+  
+      }
+    );
   };
   
   document.getElementById("show-add-user").onclick = function() {
@@ -247,7 +300,7 @@ function itemWithId(id, list) {
   return null;
 }
 
-function showDialog(formHtml) {
+function showDialog(formHtml, postAppend) {
   var container, fileInput, nameInput, formElement, tokenInput;
   
   container = document.createElement("div");
@@ -259,28 +312,8 @@ function showDialog(formHtml) {
   ].join("");
   document.querySelector("body").appendChild(container);
   
-  fileInput = container.querySelector('input[type="file"]');
-  nameInput = container.querySelector('input[name="name"]');
-  
-  if (fileInput && nameInput) {
-    fileInput.onchange = function() {
-      var newName;
-      if (fileInput.files[0]) {
-        newName = fileInput.files[0].name.toLowerCase();
-        newName = newName.replace(/^[^a-z0-9_]+/, "");
-        newName = newName.replace(/\s+/g, "_");
-        newName = newName.replace(/[^a-z0-9_.-]+/g, "");
-        newName = newName.replace(/_{2,}/g, "_");
-        newName = newName.replace(/\.{2,}/g, ".");
-        newName = newName.replace(/-{2,}/g, "-");
-        if (nameInput.maxLength) {
-          newName = newName.slice(0, -1 + nameInput.maxLength);
-        }
-        nameInput.value = newName
-      } else {
-        nameInput.value = "";
-      }
-    };
+  if (postAppend) {
+    postAppend(container);
   }
   
   formElement = container.querySelector('form');

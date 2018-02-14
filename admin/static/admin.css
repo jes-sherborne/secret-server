@@ -204,7 +204,7 @@ textarea {
   max-width: 400px;
 }
 .hidden {
-  display: none;
+  display: none !important;
 }
 .dialog-button-bar {
   text-align: right;
@@ -220,6 +220,10 @@ textarea {
 }
 .role-radio label {
   display: inline-block;
+  margin: 0 8px 12px 0;
+}
+.secret-type-radio label {
+  display: block;
   margin: 0 8px 12px 0;
 }
 

@@ -74,7 +74,7 @@ function create(options, middleware) {
     });
     
     formParser.parse(req, function (err, fields, files) {
-      var name, groups, fileSource, contentType;
+      var name, groups, fileSource, contentType, secretType, secretText;
       
       if (err) {
         if (err.status === 413) {
@@ -90,29 +90,40 @@ function create(options, middleware) {
         return;
       }
       
-      name = fields.name ? fields.name[0] : null;
+      name = fields.name && fields.name[0] && fields.name[0].length ? fields.name[0] : null;
       groups = parseGroupFields(fields);
+      secretType = fields["secret-type"] ? fields["secret-type"][0] : null;
+      secretText = fields["secret-text"] && fields["secret-text"][0] && fields["secret-text"][0].length ? fields["secret-text"][0] : null;
       fileSource = files.file && files.file[0] && files.file[0].size > 0 ? files.file[0] : null;
       
-      if (name == null || groups == null || fileSource == null || typeof name !== "string") {
+      if (name == null || groups == null || !(secretType === "file" || secretType === "text") || (secretType === "file" && fileSource == null) || (secretType === "text" && secretText == null) || typeof name !== "string") {
         finish(new helpers.WebError(400, "Invalid form values"));
         return;
       }
   
       name = name.toLowerCase();
   
-      contentType = fileSource.headers["content-type"];
-      if (!contentType || !contentType.length) {
-        contentType = mime.getType(name);
-      }
-
-      fs.readFile(fileSource.path, function(err, fileData) {
-        if (err) {
-          finish(err);
-          return;
+      if (secretType === "file") {
+        contentType = fileSource.headers["content-type"];
+        if (!contentType || !contentType.length) {
+          contentType = mime.getType(name);
         }
-        fileSystem.addFile({id: name, fileData: fileData, groups: groups, contentType: contentType}, finish);
-      });
+  
+        fs.readFile(fileSource.path, function(err, fileData) {
+          if (err) {
+            finish(err);
+            return;
+          }
+          fileSystem.addFile({id: name, fileData: fileData, groups: groups, contentType: contentType}, finish);
+        });
+      } else {
+        fileSystem.addFile({
+          id: name,
+          fileData: Buffer.from(secretText),
+          groups: groups, contentType:
+          "text/plain"
+        }, finish);
+      }
   
       function finish(err) {
         finishFileResponse(res, files, err)
